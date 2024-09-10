@@ -1,246 +1,283 @@
-/* Complex operations in ALAT (Advanced Linear Algebra Toolkit) */
+/* Complex number operations in ALAT (Advanced Linear Algebra Toolkit) */
 
-#include "../include/complexes.h"
+#include "./utils.h"
 
-/* --------------------------------------------------------------- */
-/* ----------------------- Helper Functions  --------------------- */
-/* --------------------------------------------------------------- */
-
-void __display_complex__(complex_t complex) {
-   // Display the contents of 'complex' number.
-   if (complex.form == CARTESIAN)
-      printf("Form          : CARTESIAN\n"), 
-      printf("Complex (x, y): %f, %f\n", complex.complex[0], 
-                                         complex.complex[1]);
-   else if (complex.form == POLAR)
-      printf("Form              : POLAR\n"), 
-      printf("Complex (r, tetha): %f, %f\n", complex.complex[0], 
-                                             complex.complex[1]);
+/**
+ * Return true, if `complex` number is in cartesian form, 
+ * otherwise return false.
+ */
+bool_t complexes_iscartesian(complex_t complex)
+{
+   return (!strcmp(complex.form, "cartesian")) ? true : false;
 }
 
-/* --------------------------------------------------------------- */
-/* ------------------------ Main Functions ----------------------- */
-/* --------------------------------------------------------------- */
-
-/** @brief Transform the 'complex' number in one form to another.
- *  @param complex Complex number that will be transformed.
- *  @param form New form of 'complex'.
- *  @return `complex_t` object. 
+/**
+ * Return true, if `complex` number is in polar form, 
+ * otherwise return false.
  */
-complex_t transform(complex_t complex, form_t form) {
-   // Check if the complex number is in appropriate form.
-   assert ((complex.form == CARTESIAN || complex.form == POLAR) &&
-           (form == CARTESIAN || form == POLAR));
-   // Indicate the local variable/s.
-   complex_t result;
-   result.form = form;
-   // Convert the one form to another form.
-   if (complex.form == CARTESIAN)
-      // Convert from the cartesian to the cartesian. 
-      if (form == CARTESIAN)
-         result.complex[0] = complex.complex[0], 
-         result.complex[1] = complex.complex[1];
-      // Convert from the cartesian to the polar.
-      else
-         result.complex[0] = sqrt(pow(complex.complex[0], 2) + 
-                              pow(complex.complex[1], 2)), 
-         result.complex[1] = DEG(atan(complex.complex[1] / 
-                                  complex.complex[0])) + 180.0;
-   else 
-      // Convert from the polar to the cartesian.
-      if (form == CARTESIAN)
-         result.complex[0] = complex.complex[0] * 
-                             cos(RAD(complex.complex[1])), 
-         result.complex[1] = complex.complex[0] * 
-                             sin(RAD(complex.complex[1]));
-      // Convert from the polar to the polar.
-      else
-         result.complex[0] = complex.complex[0], 
-         result.complex[1] = complex.complex[1];
+bool_t complexes_ispolar(complex_t complex)
+{
+   return (!strcmp(complex.form, "polar")) ? true : false;
+}
 
-   return result;
-} 
- 
-/** @brief Add the 'complex1' and 'complex2' numbers.
- *  @param complex1 First complex number that will be added.
- *  @param complex2 Second complex number that will be added.
- *  @return `complex_t` object.
+/**
+ * Return true if `complex` number is zero, otherwise return false.
  */
-complex_t add(complex_t complex1, complex_t complex2) {
-   // Check if both complex numbers are is proper forms.
-   assert ((complex1.form == CARTESIAN || complex1.form == POLAR) &&
-           (complex2.form == CARTESIAN || complex2.form == POLAR));
-   // Indicate the local variable/s.
+bool_t complexes_iszero(complex_t complex)
+{
+   return (complex.complex[0] == 0 && complex.complex[1] == 0) ? true : false;
+}
+
+/**
+ * Return true, if there is Triangular inequality, otherwise return false.
+ */
+bool_t complexes_istriangle(complex_t fcomplex, complex_t scomplex)
+{
+   complex_t fres, sres;
+
+   fres = complexes_transform(fcomplex, "polar");
+   sres = complexes_transform(scomplex, "polar");
+
+   return (fres.complex[1] + sres.complex[1] >=
+      complexes_add(fres, sres, "polar").complex[1]) ? true : false;
+}
+
+/**
+ * Return true, if `fcomplex` and `scomplex` are equal, otherwise
+ * return false.
+ */
+bool_t complexes_isequal(complex_t fcomplex, complex_t scomplex)
+{
+   if (strcmp(fcomplex.form, scomplex.form))
+      return false;
+
+   if (fcomplex.complex[0] != scomplex.complex[0] || 
+       fcomplex.complex[1] != scomplex.complex[1])
+      return false;
+
+   return true;
+}
+
+/**
+ * Retrun the zero complex number. `output_form` indicates
+ * the output form of complex number and must be `cartesian`
+ * or `polar`.
+ */
+complex_t complexes_zero(str_t output_form)
+{
    complex_t result;
-   // It is easy to add complex numbers in cartesian form. So, 
-   // convert the both complex numbers to cartesian form.
-   complex1 = transform(complex1, CARTESIAN);
-   complex2 = transform(complex2, CARTESIAN);
-   // Add the complex numbers with each other.
-   result.form = CARTESIAN;
-   result.complex[0] = complex1.complex[0] + complex2.complex[0];
-   result.complex[1] = complex1.complex[1] + complex2.complex[1];
+
+   result.form = output_form;
+   result.complex[0] = 0.0, result.complex[1] = 0.0;
 
    return result;
 }
 
-/** @brief Subtract the 'complex2' number from 'complex1' number.
- *  @param complex1 First complex number that will be subtracted.
- *  @param complex2 Second complex number that will be subtracted.
- *  @return `complex_t` object.
+/**
+ * Transform `complex` number into particular `new_form`. Consistent forms that 
+ * complex number can get are `cartesian` and `polar`. Note that in this module,
+ * all angle will be represented as degrees (not radians). 
  */
-complex_t subtract(complex_t complex1, complex_t complex2) {
-   // Check if both complex numbers are is proper forms.
-   assert ((complex1.form == CARTESIAN || complex1.form == POLAR) &&
-           (complex2.form == CARTESIAN || complex2.form == POLAR));
-   // Indicate the local variable/s.
+complex_t complexes_transform(complex_t complex, str_t new_form)
+{
    complex_t result;
-   // It is easy to subtract complex numbers in cartesian form. So, 
-   // convert the both complex numbers to cartesian form.
-   complex1 = transform(complex1, CARTESIAN);
-   complex2 = transform(complex2, CARTESIAN);
-   // Subtract the complex numbers with each other.
-   result.form = CARTESIAN;
-   result.complex[0] = complex1.complex[0] - complex2.complex[0];
-   result.complex[1] = complex1.complex[1] - complex2.complex[1];
 
-   return result;
-}
-
-/** @brief Multiply the 'complex1' and 'complex2' numbers.
- *  @param complex1 First complex number that will be multiplied.
- *  @param complex2 Second complex number that will be multiplied.
- *  @return `complex_t` object.
- */
-complex_t multiply(complex_t complex1, complex_t complex2) {
-   // Check if both complex numbers are is proper forms.
-   assert ((complex1.form == CARTESIAN || complex1.form == POLAR) &&
-           (complex2.form == CARTESIAN || complex2.form == POLAR));
-   // Indicate the local variable/s.
-   complex_t result;
-   // It is easy to subtract complex numbers in polar form. So, 
-   // convert the both complex numbers to polar form.
-   complex1 = transform(complex1, POLAR);
-   complex2 = transform(complex2, POLAR);
-   // Mltiply the complex numbers with each other.
-   result.form = POLAR;
-   result.complex[0] = complex1.complex[0] * complex2.complex[0];
-   result.complex[1] = complex1.complex[1] + complex2.complex[1];
-
-   return transform(result, CARTESIAN);
-}
-
-/** @brief Divide the 'complex2' number to 'complex1' number.
- *  @param complex1 First complex number that will be divided.
- *  @param complex2 Second complex number that will be divided.
- *  @return `complex_t` object.
- */
-complex_t divide(complex_t complex1, complex_t complex2) {
-   // Check if both complex numbers are is proper forms.
-   assert ((complex1.form == CARTESIAN || complex1.form == POLAR) &&
-           (complex2.form == CARTESIAN || complex2.form == POLAR));
-   // Indicate the local variable/s.
-   complex_t result;
-   // It is easy to divide complex numbers in polar form. So, 
-   // convert the both complex numbers to polar form.
-   complex1 = transform(complex1, POLAR);
-   complex2 = transform(complex2, POLAR);
-   // Divide the complex numbers with each other.
-   result.form = POLAR;
-   result.complex[0] = complex1.complex[0] / complex2.complex[0];
-   result.complex[1] = complex1.complex[1] - complex2.complex[1];
-
-   return transform(result, CARTESIAN);
-}
-
-/** @brief Get the conjugate of the 'complex' number. 
- *  @param complex Complex number that will be conjugated.
- *  @return `complex_t` object.
- */
-complex_t conjugate(complex_t complex) {
-   // Check if the complex number is in proper form.
-   assert (complex.form == CARTESIAN || complex.form == POLAR);
-   // Indicate the local variable/s.
-   complex_t result;
-   // Get the conjugate of the complex number.
-   result.form = CARTESIAN;
-   result.complex[0] = transform(complex, CARTESIAN).complex[0];
-   result.complex[1] = -1.0*transform(complex, CARTESIAN).complex[1];
-
-   return result;
-}
-
-/** @brief Get the nth power of 'complex' number. 
- *  @param complex Complex number that will getted.
- *  @param n Nth power of the 'complex' number.
- *  @return `complex_t` object.
-*/
-complex_t power(complex_t complex, int n) {
-   // Check if the complex number is in proper form.
-   assert (complex.form == CARTESIAN || complex.form == POLAR);
-   // Indicate the local variable/s.
-   complex_t result;
-   // Get the nth power of the complex number.
-   result.form = POLAR;
-   result.complex[0] = pow(transform(complex, POLAR).complex[0], n);
-   result.complex[1] = transform(complex, POLAR).complex[1] * n;
-
-   return transform(result, CARTESIAN);
-}
-
-/** @brief Get the nth root of 'complex' number. 
- *  @param complex Complex number that will getted.
- *  @param n Nth root of the 'complex' number.
- *  @return `complex_t` object.
-*/
-complex_t root(complex_t complex, int n) {
-   // Check if the complex number is in proper form.
-   assert (complex.form == CARTESIAN || complex.form == POLAR);
-   // Indicate the local variable/s.
-   complex_t result;
-   // Get the nth root of the complex number.
-   result.form = POLAR;
-   result.complex[0] = pow(transform(complex, POLAR).complex[0], 
-                           1.0 / n);
-   result.complex[1] = transform(complex, POLAR).complex[1] / n;
-
-   return transform(result, CARTESIAN);
-}
-
-/** @brief Return true, if both complex numbers are equal, 
- *         otherwise return false.
- *  @param complex1 First complex number that will be checked.
- *  @param complex2 Second complex number that will be checked.
- *  @return `boolean` object.
- */
-boolean isequal(complex_t complex1, complex_t complex2) {
-   // Transform the complex numbers in the same form.
-   complex1 = transform(complex1, CARTESIAN);
-   complex2 = transform(complex2, CARTESIAN);
-   // Compare the component of the complex numbers.
-   if ((complex1.complex[0] == complex2.complex[0]) && 
-       (complex1.complex[1] == complex2.complex[1]))
-      return true;
+   if (!strcmp(complex.form, "cartesian") && !strcmp(new_form, "cartesian")) {
+      memcpy(&result, &complex, sizeof(complex));
+   }
+   else if (!strcmp(complex.form, "cartesian") && !strcmp(new_form, "polar")) {
+      result.form = "polar";
+      result.complex[0] = sqrt(pow(complex.complex[0], 2) + pow(complex.complex[1], 2));
+      result.complex[1] = DEG(atan(complex.complex[1] / complex.complex[0])) + 180.0;
+   }
+   else if (!strcmp(complex.form, "polar") && !strcmp(new_form, "cartesian")) {
+      result.form = "cartesian";
+      result.complex[0] = complex.complex[0] * cos(RAD(complex.complex[1]));
+      result.complex[1] = complex.complex[0] * sin(RAD(complex.complex[1]));
+   }
+   else if (!strcmp(complex.form, "polar") && !strcmp(new_form, "polar")) {
+      memcpy(&result, &complex, sizeof(complex));
+   }
    else
-      return false;
+      raise_error("Complex number form must be 'cartesian' or 'polar'");
+   
+   return result;
 }
 
-/** @brief Return true, if there is triangle inequality between 
- *         'complex1' and 'complex2' numbers, else return false.
- *  @param complex1 First complex number that will checked.
- *  @param complex2 Second complex number that will checked.
- *  @return `boolean` object.
+/**
+ * Return the real portion of `complex` number. If `complex` 
+ * number defined in polar form, convert it to cartesian form. 
  */
-boolean istriangle(complex_t complex1, complex_t complex2) {
-   // Transform the complex numbers in the same form.
-   complex1 = transform(complex1, CARTESIAN);
-   complex2 = transform(complex2, CARTESIAN);
-   // Check the triangle inequality.
-   if ((transform(complex1, POLAR).complex[1] + 
-        transform(complex2, POLAR).complex[1]) >= 
-       (transform(add(complex1, complex2), POLAR).complex[1]))
-      return true;
-   else 
-      return false;
+double complexes_real(complex_t complex)
+{
+   if (!strcmp(complex.form, "cartesian"))
+      return complex.complex[0];
+   else
+      return complexes_transform(complex, "cartesian").complex[0];
 }
- 
+
+/**
+ * Return the imaginary portion of `complex`.  If `complex` 
+ * number defined in polar form, convert it to cartesian form. 
+ */
+double complexes_imaginary(complex_t complex)
+{
+   if (!strcmp(complex.form, "cartesian"))
+      return complex.complex[1];
+   else
+      return complexes_transform(complex, "cartesian").complex[1];
+}
+
+/**
+ * Return the modules portion of `complex`.  If `complex` 
+ * number defined in cartesian form, convert it to polar form. 
+ */
+double complexes_modules(complex_t complex)
+{
+   if (!strcmp(complex.form, "polar"))
+      return complex.complex[0];
+   else
+      return complexes_transform(complex, "polar").complex[0];  
+}
+
+/**
+ * Return the argument portion of `complex`.  If `complex` 
+ * number defined in cartesian form, convert it to polar form. 
+ */
+double complexes_argument(complex_t complex)
+{
+   if (!strcmp(complex.form, "polar"))
+      return complex.complex[1];
+   else
+      return complexes_transform(complex, "polar").complex[1]; 
+}
+
+/**
+ * Add up the `fcomplex` and `scomplex` numbers with each other. The result
+ * complex number will be in form of `output_form` and must be `cartesian`, 
+ * or `polar`.
+ */
+complex_t complexes_add(complex_t fcomplex, complex_t scomplex, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("cartesian");
+
+   result.complex[0] = complexes_transform(fcomplex, "cartesian").complex[0] + 
+      complexes_transform(scomplex, "cartesian").complex[0];
+   result.complex[1] = complexes_transform(fcomplex, "cartesian").complex[1] + 
+      complexes_transform(scomplex, "cartesian").complex[1];
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Subtract the `scomplex` number from `fcomplex` number. The result complex 
+ * number will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_subtract(complex_t fcomplex, complex_t scomplex, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("cartesian");
+
+   result.complex[0] = complexes_transform(fcomplex, "cartesian").complex[0] -
+      complexes_transform(scomplex, "cartesian").complex[0];
+   result.complex[1] = complexes_transform(fcomplex, "cartesian").complex[1] -
+      complexes_transform(scomplex, "cartesian").complex[1];
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Multiply the `fcomplex` and `scomplex` with each other. The result complex 
+ * number will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_multiply(complex_t fcomplex, complex_t scomplex, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("polar");
+
+   result.complex[0] = complexes_transform(fcomplex, "polar").complex[0] *
+      complexes_transform(scomplex, "polar").complex[0];
+   result.complex[1] = complexes_transform(fcomplex, "polar").complex[1] +
+      complexes_transform(scomplex, "polar").complex[1];
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Divide the `scomplex` to `fcomplex` with each other. The result complex 
+ * number will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_divide(complex_t fcomplex, complex_t scomplex, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("polar");
+
+   result.complex[0] = complexes_transform(fcomplex, "polar").complex[0] /
+      complexes_transform(scomplex, "polar").complex[0];
+   result.complex[1] = complexes_transform(fcomplex, "polar").complex[1] -
+      complexes_transform(scomplex, "polar").complex[1];
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Get the `n`.th power of `complex` number. The result complex number 
+ * will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_power(complex_t complex, double n, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("polar");
+
+   result.complex[0] = pow(complexes_transform(complex, "polar").complex[0], n);
+   result.complex[1] = complexes_transform(complex, "polar").complex[1] * n;
+
+   return complexes_transform(result, output_form);  
+}
+
+/**
+ * Get the `n`.th root of `complex` number. The result complex number 
+ * will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_root(complex_t complex, double n, str_t output_form)
+{
+   complex_t result;
+
+   result = complexes_zero("polar");
+
+   result.complex[0] = pow(complexes_transform(complex, "polar").complex[0], 1/n);
+   result.complex[1] = complexes_transform(complex, "polar").complex[1] / n;
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Get the conjugate of `complex` number. The result complex number 
+ * will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_conjugate(complex_t complex, str_t output_form)
+{
+    complex_t result;
+
+   result = complexes_zero("cartesian");
+
+   result.complex[0] = complexes_transform(complex, "cartesian").complex[0];
+   result.complex[1] = -1 * complexes_transform(complex, "cartesian").complex[1];
+
+   return complexes_transform(result, output_form);
+}
+
+/**
+ * Get the reciprocol of `complex` number. The result complex number 
+ * will be in form of `output_form` and must be `cartesian` or `polar`.
+ */
+complex_t complexes_reciprocol(complex_t complex, str_t output_form)
+{
+   return complexes_power(complex, -1, output_form);
+}

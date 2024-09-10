@@ -1,18 +1,42 @@
-# An example Makefile scripts for ALAT vector applications.
+# ALAT (Advanced Linear Algebra Toolkit)
 
-# Object files to compile program.
-objects = vectors.o vector_properties.o
+MAJOR := 2
+MINOR := 0
+PATCHLEVEL := 1
 
-# The main script to compile program.
-main : $(objects)
-	gcc $(objects) -o main -lm
+CC := gcc 
+RM := rm -rf
+AR := ar rcs
+FLAGS := -c -fPIC -g
 
-# Object file definations.
-vectors.o 			  : ./include/vectors.h
-vector_properties.o : ./include/vectors.h
-# $(objects)			  : ./include/vectors.h
+ALAT := libalat.a
 
-.PHONY : clean
+MATRICES := ./source/matrices.c 
+VECTORS := ./source/vectors.c 
+APPS := ./source/apps.c 
+COMPLEXES := ./source/complexes.c 
+CRYPTS := ./source/crypts.c 
+UTILS := ./source/utils.h 
 
-clean :
-	rm main $(objects)
+OBJECTS := matrices.o vectors.o crypts.o apps.o complexes.o
+
+$(ALAT): $(OBJECTS)
+	$(AR) $(ALAT) $(OBJECTS)
+
+matrices.o: $(MATRICES) $(UTILS)
+	$(CC) $(MATRICES) $(FLAGS)
+
+vectors.o: $(VECTORS) $(UTILS)
+	$(CC) $(VECTORS) $(FLAGS)
+ 
+crypts.o: $(CRYPTS) $(UTILS)
+	$(CC) $(CRYPTS) $(FLAGS)
+
+apps.o: $(APPS) $(UTILS)
+	$(CC) $(APPS) $(FLAGS)
+
+complexes.o: $(COMPLEXES) $(UTILS)
+	$(CC) $(COMPLEXES) $(FLAGS)
+
+clean:
+	$(RM) $(OBJECTS)
