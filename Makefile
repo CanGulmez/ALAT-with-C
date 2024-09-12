@@ -7,7 +7,7 @@ PATCHLEVEL := 1
 CC := gcc 
 RM := rm -rf
 AR := ar rcs
-FLAGS := -c -fPIC -g
+FLAGS := -c -g
 
 ALAT := libalat.a
 
