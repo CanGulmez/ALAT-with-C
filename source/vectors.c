@@ -103,7 +103,7 @@ bool_t vectors_ispythagorean(vector_t fvector, vector_t svector)
  * Return true, if `fvector` and `svector` are perpendicular, 
  * otherwise return false.
  */
-bool_t vectors_isstep(vector_t fvector, vector_t svector)
+bool_t vectors_issteep(vector_t fvector, vector_t svector)
 {
    return vectors_angle(fvector, svector, "degrees") == 90.0 ? true : false;
 }
