@@ -138,6 +138,7 @@ vector_t vectors_arbitrary(double value, dim_t dim);
 vector_t vectors_sequential(int start, int end, dim_t dim);
 vector_t vectors_random(dim_t dim);
 vector_t vectors_uniform(int start, int end, dim_t dim);
+vector_t vectors_randint(int start, int end, dim_t dim)
 vector_t vectors_transform(vector_t vector, str_t old_coor, str_t new_coor);
 double vectors_lenght(vector_t vector);
 vector_t vectors_abs(vector_t vector);
