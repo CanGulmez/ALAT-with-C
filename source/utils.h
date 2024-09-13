@@ -130,7 +130,7 @@ bool_t vectors_isarbitrary(vector_t vector, double value);
 bool_t vectors_iscasc(vector_t fvector, vector_t svector);
 bool_t vectors_istriangle(vector_t fvector, vector_t svector);
 bool_t vectors_ispythagorean(vector_t fvector, vector_t svector);
-bool_t vectors_isstep(vector_t fvector, vector_t svector);
+bool_t vectors_issteep(vector_t fvector, vector_t svector);
 bool_t vectors_isparallel(vector_t fvector, vector_t svector);
 vector_t vectors_zeros(dim_t dim);
 vector_t vectors_ones(dim_t dim);
