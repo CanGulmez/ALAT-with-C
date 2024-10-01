@@ -1,0 +1,1275 @@
+#!/usr/bin/python3
+
+import os, sys 
+import subprocess
+
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QColor, QIcon, QFont
+from PySide6.QtWidgets import (
+   QApplication, 
+   QMainWindow, 
+   QWidget, 
+   QLabel, 
+   QVBoxLayout, 
+   QHBoxLayout,
+   QPushButton, 
+   QComboBox,
+   QTextEdit,
+   QLineEdit,
+   QSpinBox
+)
+
+# Some icon paths to use in the ALAT-GUI program.
+alatPath = os.path.abspath("./icons/alat.png")
+matrixPath = os.path.abspath("./icons/matrix.png")
+vectorPath = os.path.abspath("./icons/vector.png")
+complexPath = os.path.abspath("./icons/complex.png")
+cryptPath = os.path.abspath("./icons/crypt.png")
+appPath = os.path.abspath("./icons/app.png")
+calculatorPath = os.path.abspath("./icons/calculator.png")
+cleanPath = os.path.abspath("./icons/clean.png")
+
+
+class Matrices(QWidget):
+   
+   def __init__(self):
+      super(Matrices, self).__init__()
+
+      # Set the window, color, margins and icon of matrices window.
+      self.setWindowTitle("Matrices")
+      self.setPalette(QColor(53, 53, 53))
+      self.setWindowIcon(QIcon(matrixPath))
+      self.setContentsMargins(10, 5, 10, 5)
+      self.setStyleSheet("QComboBox {background-color: rgb(42, 42, 42)}")
+
+      # Create the layouts of matrices window.
+      windowLayout = QVBoxLayout()
+      pageLayout = QHBoxLayout()
+      leftLayout = QVBoxLayout()
+      rightLayout = QVBoxLayout()
+      selectorLayout = QHBoxLayout()
+      buttonsLayout = QHBoxLayout()
+      matrix1Layout = QHBoxLayout()
+      matrix2Layout = QHBoxLayout()
+      rowLayout = QHBoxLayout()
+      columnLayout = QHBoxLayout()
+      startLayout = QHBoxLayout()
+      endLayout = QHBoxLayout()
+      valueLayout = QHBoxLayout()
+      nLayout = QHBoxLayout()
+      reverseLayout = QHBoxLayout()
+      axisLayout = QHBoxLayout()
+
+      # Create and place the header label.
+      label = QLabel("Matrices Module")
+      font = QFont()
+      font.setBold(True)
+      font.setPointSize(16)
+      label.setFont(font)
+      windowLayout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place a combo box to select the desired method.
+      methods = [
+         "issquare", "ishomogen", "iszeros", "isones", "isarbitrary", "isidentity", 
+         "islowertri", "isuppertri", "isdiagonal", "issymmetric", "isequal", 
+         "istriangle", "isinvertible", "zeros", "ones", "identity", "arbitrary", 
+         "sequential", "random", "uniform", "randint", "diagonal", "max", "min", 
+         "elmax", "elmin", "mean", "stddev", "median", "pow", "root", "degrees", 
+         "radians", "sort", "sum", "shuffle", "abs", "reshape", "transpose", 
+         "concat", "add", "subtract", "scaler_mul", "dot_mul", "cross_mul", 
+         "scaler_div", "swap", "dot_div", "det", "minors", "cofactors", "adjoint", 
+         "inverse", "solve"
+      ]
+      label = QLabel("Method")
+      self.selector = QComboBox()
+      self.selector.addItems(methods)
+      self.selector.setEditable(True)
+      self.selector.setCurrentIndex(-1)
+      self.selector.editTextChanged.connect(self.selectMethod)
+      selectorLayout.addWidget(label, stretch=1)
+      selectorLayout.addWidget(self.selector, stretch=5)
+      leftLayout.addLayout(selectorLayout)
+
+      # Create and place the first matrix field.
+      label = QLabel("Matrix 1")
+      self.matrix1 = QLineEdit()
+      self.matrix1.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5:7,4,-1")
+      matrix1Layout.addWidget(label, stretch=1)
+      matrix1Layout.addWidget(self.matrix1, stretch=5)
+      leftLayout.addLayout(matrix1Layout)
+
+      # Create and place the second matrix field.
+      label = QLabel("Matrix 2")
+      self.matrix2 = QLineEdit()
+      self.matrix2.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5:7,4,-1")
+      matrix2Layout.addWidget(label, stretch=1)
+      matrix2Layout.addWidget(self.matrix2, stretch=5)
+      leftLayout.addLayout(matrix2Layout)
+
+      # Create and place the row field.
+      label = QLabel("Row")
+      self.row = QSpinBox()
+      self.row.setRange(1, 64)
+      rowLayout.addWidget(label, stretch=1)
+      rowLayout.addWidget(self.row, stretch=5)
+      leftLayout.addLayout(rowLayout)
+
+      # Create and place the column field.
+      label = QLabel("Column")
+      self.column = QSpinBox()
+      self.column.setRange(1, 64)
+      columnLayout.addWidget(label, stretch=1)
+      columnLayout.addWidget(self.column, stretch=5)
+      leftLayout.addLayout(columnLayout)
+      
+      # Create and place the start field.
+      label = QLabel("Start")
+      self.start = QLineEdit()
+      startLayout.addWidget(label, stretch=1)
+      startLayout.addWidget(self.start, stretch=5)
+      leftLayout.addLayout(startLayout)
+
+      # Create and place the end field.
+      label = QLabel("End")
+      self.end = QLineEdit()
+      endLayout.addWidget(label, stretch=1)
+      endLayout.addWidget(self.end, stretch=5)
+      leftLayout.addLayout(endLayout)
+
+      # Create and place the value field.
+      label = QLabel("Value")
+      self.value = QLineEdit()
+      valueLayout.addWidget(label, stretch=1)
+      valueLayout.addWidget(self.value, stretch=5)
+      leftLayout.addLayout(valueLayout)
+
+      # Create and place the n field.
+      label = QLabel("n")
+      self.n = QLineEdit()
+      nLayout.addWidget(label, stretch=1)
+      nLayout.addWidget(self.n, stretch=5)
+      leftLayout.addLayout(nLayout)
+
+      # Create and place axis box.
+      label = QLabel("Axis")
+      self.axis = QComboBox()
+      self.axis.addItems(["0 (Horizontal)", "1 (Vertical)"])
+      self.axis.setEditable(True)
+      self.axis.setCurrentIndex(-1)
+      axisLayout.addWidget(label, stretch=1)
+      axisLayout.addWidget(self.axis, stretch=5)
+      leftLayout.addLayout(axisLayout)
+
+      # Create and place reverse box.
+      label = QLabel("Reverse")
+      self.reverse = QComboBox()
+      self.reverse.addItems(["0 (Ascending)", "1 (Descending)"])
+      self.reverse.setEditable(True)
+      self.reverse.setCurrentIndex(-1)
+      reverseLayout.addWidget(label, stretch=1)
+      reverseLayout.addWidget(self.reverse, stretch=5)
+      leftLayout.addLayout(reverseLayout)
+
+      # Create and place the calculate and clean buttons.
+      self.calculate = QPushButton(QIcon(calculatorPath), "Calculate")
+      self.calculate.clicked.connect(self.calculateResult)
+      self.clear = QPushButton(QIcon(cleanPath), "Clean")
+      self.clear.clicked.connect(self.clearWindow)
+      buttonsLayout.addWidget(self.calculate)
+      buttonsLayout.addWidget(self.clear)
+      leftLayout.addLayout(buttonsLayout)
+
+      # Create and place a text field to show the results.
+      self.result = QTextEdit()
+      self.result.setFontPointSize(12)
+      self.result.setReadOnly(True)
+      rightLayout.addWidget(self.result)
+
+      # Set the all parameters disabled defaultly.
+      self.disableParameters()
+ 
+      # Set the page layout to vectors window.
+      pageLayout.addLayout(leftLayout, stretch=1)
+      pageLayout.addLayout(rightLayout, stretch=1)
+      windowLayout.addLayout(pageLayout)
+      self.setLayout(windowLayout)
+
+   def disableParameters(self):
+      """ Disable the all method's parameters. """
+      for parameter in (self.matrix1, self.matrix2, self.row, self.column,
+                        self.start, self.end, self.value, self.n, self.axis,
+                        self.reverse, self.calculate, self.clear):
+         parameter.setDisabled(True)
+
+   def selectMethod(self):
+      """ Interest the selected method properties. """
+      text = self.selector.currentText()
+      self.calculate.setDisabled(False)
+      self.clear.setDisabled(False)
+
+      if text in ("issquare", "ishomogen", "iszeros", "isones", "isidentity",
+                  "isuppertri", "islowertri", "isdiagonal", "diagonal", 
+                  "issymmetric", "istriangle", "isinvertible", "max", "min", 
+                  "mean", "stddev", "median", "degrees", "radians", "shuffle", 
+                  "abs", "transpose", "swap", "det", "minors", "cofactors", 
+                  "adjoint", "inverse", "solve"):
+         self.matrix1.setDisabled(False)
+      elif text in ("isequal", "add", "subtract", "dot_mul", "cross_mul",
+                    "dot_div"):
+         self.matrix1.setDisabled(False)
+         self.matrix2.setDisabled(False)
+      elif text in ("zeros", "ones", "random", "identity"):
+         self.row.setDisabled(False)
+         self.column.setDisabled(False)
+      elif text in ("isarbitrary", "scaler_mul", "scaler_div"):
+         self.matrix1.setDisabled(False)
+         self.value.setDisabled(False)
+      elif text in ("sequential", "uniform", "randint"):
+         self.start.setDisabled(False)
+         self.end.setDisabled(False)
+         self.row.setDisabled(False)
+         self.column.setDisabled(False)
+      elif text in ("arbitrary"):
+         self.value.setDisabled(False)
+         self.row.setDisabled(False)
+         self.column.setDisabled(False)
+      elif text in ("elmax", "elmin"):
+         self.matrix1.setDisabled(False)
+         self.reverse.setDisabled(False)
+      elif text in ("pow", "root"):
+         self.matrix1.setDisabled(False)
+         self.n.setDisabled(False)
+      elif text in ("sort"):
+         self.matrix1.setDisabled(False)
+         self.reverse.setDisabled(False)
+      elif text in ("sum"):
+         self.matrix1.setDisabled(False)
+         self.axis.setDisabled(False)
+      elif text in ("reshape"):
+         self.matrix1.setDisabled(False)
+         self.row.setDisabled(False)
+         self.column.setDisabled(False)
+      elif text in ("concat"):
+         self.matrix1.setDisabled(False)
+         self.matrix2.setDisabled(False)
+         self.axis.setDisabled(False)
+
+   def calculateResult(self):
+      """ Calculate the results and then show in the plain text. """
+      text = self.selector.currentText()
+      arguments = [os.path.abspath("./alat-cli"), f"matrices_{text}"]
+
+      if text in ("issquare", "ishomogen", "iszeros", "isones", "isidentity",
+                  "isuppertri", "islowertri", "isdiagonal", "diagonal", 
+                  "issymmetric", "istriangle", "isinvertible", "max", "min", 
+                  "mean", "stddev", "median", "degrees", "radians", "shuffle", 
+                  "abs", "transpose", "swap", "det", "minors", "cofactors", 
+                  "adjoint", "inverse", "solve"):
+         arguments.append(self.matrix1.text())
+      elif text in ("isequal", "add", "subtract", "dot_mul", "cross_mul",
+                    "dot_div"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.matrix2.text())
+      elif text in ("zeros", "ones", "random", "identity"):
+         arguments.append(self.row.text() + "," + self.column.text())
+      elif text in ("isarbitrary", "scaler_mul", "scaler_div"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.value.text())
+      elif text in ("sequential", "uniform", "randint"):
+         arguments.append(self.start.text())
+         arguments.append(self.end.text())
+         arguments.append(self.row.text() + "," + self.column.text())
+      elif text in ("arbitrary"):
+         arguments.append(self.value.text())
+         arguments.append(self.row.text() + "," + self.column.text())
+      elif text in ("elmax", "elmin"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.reverse.currentText()[:1])
+      elif text in ("pow", "root"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.n.text())
+      elif text in ("sort"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.reverse.currentText()[:1])
+      elif text in ("sum"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.axis.currentText()[:1])
+      elif text in ("reshape"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.row.text() + "," + self.column.text())
+      elif text in ("concat"):
+         arguments.append(self.matrix1.text())
+         arguments.append(self.matrix2.text())
+         arguments.append(self.axis.currentText()[:1])
+   
+      process = subprocess.run(arguments, capture_output=True, text=True)
+      self.result.setPlainText(process.stdout)
+
+   def closeEvent(self, event):
+      """ Clear the all elements when window is disappeared. """
+      self.selector.setCurrentIndex(-1)
+      self.matrix1.clear()
+      self.matrix2.clear()
+      self.row.setValue(1)
+      self.column.setValue(1)
+      self.start.clear()
+      self.end.clear()
+      self.n.clear()
+      self.value.clear()
+      self.reverse.clear()
+      self.axis.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+      event.accept()
+
+   def clearWindow(self):
+      """ Clear the all elements in the window. """
+      self.selector.setCurrentIndex(-1)
+      self.matrix1.clear()
+      self.matrix2.clear()
+      self.row.setValue(1)
+      self.column.setValue(1)
+      self.start.clear()
+      self.end.clear()
+      self.n.clear()
+      self.value.clear()
+      self.reverse.setCurrentIndex(-1)
+      self.axis.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+
+
+class Vectors(QWidget):
+   """ Vectors Module in ALAT (Advanced Linear Algebra Toolkit) """
+
+   def __init__(self):
+      super(Vectors, self).__init__()
+
+      # Set the window, color, margins and icon of vectors window.
+      self.setWindowTitle("Vectors")
+      self.setPalette(QColor(53, 53, 53))
+      self.setContentsMargins(10, 5, 10, 5)
+      self.setWindowIcon(QIcon(vectorPath))
+      self.setStyleSheet("QComboBox {background-color: rgb(42, 42, 42)}")
+
+      # Create the layouts of vectors window.
+      windowLayout = QVBoxLayout()
+      pageLayout = QHBoxLayout()
+      leftLayout = QVBoxLayout()
+      rightLayout = QVBoxLayout()
+      selectorLayout = QHBoxLayout()
+      buttonsLayout = QHBoxLayout()
+      vector1Layout = QHBoxLayout()
+      vector2Layout = QHBoxLayout()
+      dimensionLayout = QHBoxLayout()
+      startLayout = QHBoxLayout()
+      endLayout = QHBoxLayout()
+      valueLayout = QHBoxLayout()
+      nLayout = QHBoxLayout()
+      oldCoorLayout = QHBoxLayout()
+      newCoorLayout = QHBoxLayout()
+      formLayout = QHBoxLayout()
+
+      # Create and place the header label.
+      label = QLabel("Vectors Module")
+      font = QFont()
+      font.setBold(True)
+      font.setPointSize(16)
+      label.setFont(font)
+      windowLayout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place a combo box to select the desired method.
+      methods = [
+         "iszeros", "isones", "isequal", "isarbitrary", "iscasc", "istriangle", 
+         "ispythagorean", "issteep", "isparallel", "zeros", "ones", "arbitrary", 
+         "sequential", "random", "uniform", "randint", "transform", "lenght", 
+         "abs", "pow", "root", "unit", "add", "subtract", "scaler_mul", "distance",
+         "dot_mul", "cross_mul", "angle"
+      ]
+      label = QLabel("Method")
+      self.selector = QComboBox()
+      self.selector.addItems(methods)
+      self.selector.setEditable(True)
+      self.selector.setCurrentIndex(-1)
+      self.selector.editTextChanged.connect(self.selectMethod)
+      selectorLayout.addWidget(label, stretch=1)
+      selectorLayout.addWidget(self.selector, stretch=5)
+      leftLayout.addLayout(selectorLayout)
+
+      # Create and place the first vector field.
+      label = QLabel("Vector 1")
+      self.vector1 = QLineEdit()
+      self.vector1.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5,6")
+      vector1Layout.addWidget(label, stretch=1)
+      vector1Layout.addWidget(self.vector1, stretch=5)
+      leftLayout.addLayout(vector1Layout)
+
+      # Create and place the second vector field.
+      label = QLabel("Vector 2")
+      self.vector2 = QLineEdit()
+      self.vector2.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5,6")
+      vector2Layout.addWidget(label, stretch=1)
+      vector2Layout.addWidget(self.vector2, stretch=5)
+      leftLayout.addLayout(vector2Layout)
+
+      # Create and place the dimension field.
+      label = QLabel("Dimension")
+      self.dimension = QSpinBox()
+      self.dimension.setRange(1, 64 * 64)
+      dimensionLayout.addWidget(label, stretch=1)
+      dimensionLayout.addWidget(self.dimension, stretch=5)
+      leftLayout.addLayout(dimensionLayout)
+      
+      # Create and place the start field.
+      label = QLabel("Start")
+      self.start = QLineEdit()
+      startLayout.addWidget(label, stretch=1)
+      startLayout.addWidget(self.start, stretch=5)
+      leftLayout.addLayout(startLayout)
+
+      # Create and place the end field.
+      label = QLabel("End")
+      self.end = QLineEdit()
+      endLayout.addWidget(label, stretch=1)
+      endLayout.addWidget(self.end, stretch=5)
+      leftLayout.addLayout(endLayout)
+
+      # Create and place the value field.
+      label = QLabel("Value")
+      self.value = QLineEdit()
+      valueLayout.addWidget(label, stretch=1)
+      valueLayout.addWidget(self.value, stretch=5)
+      leftLayout.addLayout(valueLayout)
+
+      # Create and place the n field.
+      label = QLabel("n")
+      self.n = QLineEdit()
+      nLayout.addWidget(label, stretch=1)
+      nLayout.addWidget(self.n, stretch=5)
+      leftLayout.addLayout(nLayout)
+
+      # Create and place old coordinate box.
+      label = QLabel("Old coor.")
+      self.oldCoor = QComboBox()
+      self.oldCoor.addItems(["cartesian", "cylindrical", "spherical"])
+      self.oldCoor.setEditable(True)
+      self.oldCoor.setCurrentIndex(-1)
+      oldCoorLayout.addWidget(label, stretch=1)
+      oldCoorLayout.addWidget(self.oldCoor, stretch=5)
+      leftLayout.addLayout(oldCoorLayout)
+
+      # Create and place new coordinate box.
+      label = QLabel("New coor.")
+      self.newCoor = QComboBox()
+      self.newCoor.addItems(["cartesian", "cylindrical", "spherical"])
+      self.newCoor.setEditable(True)
+      self.newCoor.setCurrentIndex(-1)
+      newCoorLayout.addWidget(label, stretch=1)
+      newCoorLayout.addWidget(self.newCoor, stretch=5)
+      leftLayout.addLayout(newCoorLayout)
+
+      # Create and place new form box.
+      label = QLabel("Form")
+      self.form = QComboBox()
+      self.form.addItems(["decimal", "radians", "degrees"])
+      self.form.setEditable(True)
+      self.form.setCurrentIndex(-1)
+      formLayout.addWidget(label, stretch=1)
+      formLayout.addWidget(self.form, stretch=5)
+      leftLayout.addLayout(formLayout)
+
+      # Create and place the calculate and clean buttons.
+      self.calculate = QPushButton(QIcon(calculatorPath), "Calculate")
+      self.calculate.clicked.connect(self.calculateResult)
+      self.clear = QPushButton(QIcon(cleanPath), "Clean")
+      self.clear.clicked.connect(self.clearWindow)
+      buttonsLayout.addWidget(self.calculate)
+      buttonsLayout.addWidget(self.clear)
+      leftLayout.addLayout(buttonsLayout)
+
+      # Create and place a text field to show the results.
+      self.result = QTextEdit()
+      self.result.setFontPointSize(12)
+      self.result.setReadOnly(True)
+      rightLayout.addWidget(self.result)
+
+      # Set the all parameters disabled defaultly.
+      self.disableParameters()
+ 
+      # Set the page layout to vectors window.
+      pageLayout.addLayout(leftLayout, stretch=1)
+      pageLayout.addLayout(rightLayout, stretch=1)
+      windowLayout.addLayout(pageLayout)
+      self.setLayout(windowLayout)
+
+   def disableParameters(self):
+      """ Disable the all method's parameters. """
+      for parameter in (self.vector1, self.vector2, self.dimension, self.start,
+                        self.end, self.value, self.n, self.oldCoor, self.newCoor,
+                        self.form, self.calculate, self.clear):
+         parameter.setDisabled(True)
+
+   def selectMethod(self):
+      """ Interest the selected method properties. """
+      text = self.selector.currentText()
+      self.calculate.setDisabled(False)
+      self.clear.setDisabled(False)
+
+      if text in ("iszeros", "isones", "lenght", "abs", "unit"):
+         self.vector1.setDisabled(False)
+      elif text in ("isequal", "iscasc", "istriangle", "ispythagorean", 
+                    "issteep", "isparallel", "add", "subtract", "distance", 
+                    "dot_mul", "cross_mul"):
+         self.vector1.setDisabled(False)
+         self.vector2.setDisabled(False)
+      elif text in ("isarbitrary", "scaler_mul"):
+         self.vector1.setDisabled(False)
+         self.value.setDisabled(False)
+      elif text in ("zeros", "ones", "random"):
+         self.dimension.setDisabled(False)
+      elif text in ("sequential", "uniform", "randint"):
+         self.start.setDisabled(False)
+         self.end.setDisabled(False)
+         self.dimension.setDisabled(False)
+      elif text in ("pow", "root"):
+         self.vector1.setDisabled(False)
+         self.n.setDisabled(False)
+      elif text in ("arbitrary"):
+         self.value.setDisabled(False)
+         self.dimension.setDisabled(False)
+      elif text in ("transform"):
+         self.vector1.setDisabled(False)
+         self.oldCoor.setDisabled(False)
+         self.newCoor.setDisabled(False)
+      elif text in ("angle"):
+         self.vector1.setDisabled(False)
+         self.vector2.setDisabled(False)
+         self.form.setDisabled(False)
+
+   def calculateResult(self):
+      """ Calculate the results and then show in the plain text. """
+      text = self.selector.currentText()
+      arguments = [os.path.abspath("./alat-cli"), f"vectors_{text}"]
+
+      if text in ("iszeros", "isones", "lenght", "abs", "unit"):
+         arguments.append(self.vector1.text())
+      elif text in ("isequal", "iscasc", "istriangle", "ispythagorean", 
+                    "issteep", "isparallel", "add", "subtract", "distance", 
+                    "dot_mul", "cross_mul"):
+         arguments.append(self.vector1.text())
+         arguments.append(self.vector2.text())
+      elif text in ("isarbitrary", "scaler_mul"):
+         arguments.append(self.vector1.text())
+         arguments.append(self.value.text())
+      elif text in ("zeros", "ones", "random"):
+         arguments.append(self.dimension.text())
+      elif text in ("sequential", "uniform", "randint"):
+         arguments.append(self.start.text())
+         arguments.append(self.end.text())
+         arguments.append(self.dimension.text())
+      elif text in ("pow", "root"):
+         arguments.append(self.vector1.text())
+         arguments.append(self.n.text())
+      elif text in ("arbitrary"):
+         arguments.append(self.value.text())
+         arguments.append(self.dimension.text())
+      elif text in ("transform"):
+         arguments.append(self.vector1.text())
+         arguments.append(self.oldCoor.currentText())
+         arguments.append(self.newCoor.currentText())
+      elif text in ("angle"):
+         arguments.append(self.vector1.text())
+         arguments.append(self.vector2.text())
+         arguments.append(self.form.currentText())
+
+      process = subprocess.run(arguments, capture_output=True, text=True)
+      self.result.setText(process.stdout)   
+
+   def closeEvent(self, event):
+      """ Clear the all elements when window is disappeared. """
+      self.selector.setCurrentIndex(-1)
+      self.vector1.clear()
+      self.vector2.clear()
+      self.dimension.setValue(1)
+      self.start.clear()
+      self.end.clear()
+      self.n.clear()
+      self.value.clear()
+      self.oldCoor.setCurrentIndex(-1)
+      self.newCoor.setCurrentIndex(-1)
+      self.form.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+      event.accept()
+
+   def clearWindow(self):
+      """ Clear the all elements in the window. """
+      self.selector.setCurrentIndex(-1)
+      self.vector1.clear()
+      self.vector2.clear()
+      self.dimension.setValue(1)
+      self.start.clear()
+      self.end.clear()
+      self.n.clear()
+      self.value.clear()
+      self.oldCoor.setCurrentIndex(-1)
+      self.newCoor.setCurrentIndex(-1)
+      self.form.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+
+   
+class Complexes(QWidget):
+   """ Complexes Module in ALAT (Advanced Linear Algebra Toolkit) """
+
+   def __init__(self):
+      super(Complexes, self).__init__()
+
+      # Set the window, color, margins and icon of vectors window.
+      self.setWindowTitle("Complexes")
+      self.setPalette(QColor(53, 53, 53))
+      self.setWindowIcon(QIcon(complexPath))
+      self.setContentsMargins(10, 5, 10, 5)
+      self.setStyleSheet("QComboBox {background-color: rgb(42, 42, 42)}")
+
+      # Create the layouts of complexes window.
+      windowLayout = QVBoxLayout()
+      pageLayout = QHBoxLayout()
+      leftLayout = QVBoxLayout()
+      rightLayout = QVBoxLayout()
+      selectorLayout = QHBoxLayout()
+      buttonsLayout = QHBoxLayout()
+      complex1Layout = QHBoxLayout()
+      complex2Layout = QHBoxLayout()
+      nLayout = QHBoxLayout()
+      newFormLayout = QHBoxLayout()
+      outputFormLayout = QHBoxLayout()
+
+      # Create and place the header label.
+      label = QLabel("Complexes Module")
+      font = QFont()
+      font.setBold(True)
+      font.setPointSize(16)
+      label.setFont(font)
+      windowLayout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place a combo box to select the desired method.
+      methods = [
+         "iscartesian", "ispolar", "iszero", "istriangle", "isequal", "zero", 
+         "transform", "real", "imaginary", "modules", "argument", "add", "subtract",
+         "multiply", "divide", "power", "root", "conjugate", "reciprocol"
+      ]
+      label = QLabel("Method")
+      self.selector = QComboBox()
+      self.selector.addItems(methods)
+      self.selector.setEditable(True)
+      self.selector.setCurrentIndex(-1)
+      self.selector.editTextChanged.connect(self.selectMethod)
+      selectorLayout.addWidget(label, stretch=1)
+      selectorLayout.addWidget(self.selector, stretch=5)
+      leftLayout.addLayout(selectorLayout)
+
+      # Create and place the first complex field.
+      label = QLabel("Complex 1")
+      self.complex1 = QLineEdit()
+      self.complex1.setPlaceholderText("DON'T use spaces,  e.g. 7.5,-5,cartesian")
+      complex1Layout.addWidget(label, stretch=1)
+      complex1Layout.addWidget(self.complex1, stretch=5)
+      leftLayout.addLayout(complex1Layout)
+
+      # Create and place the second complex field.
+      label = QLabel("Complex 2")
+      self.complex2 = QLineEdit()
+      self.complex2.setPlaceholderText("DON'T use spaces,  e.g. 6,90,polar")
+      complex2Layout.addWidget(label, stretch=1)
+      complex2Layout.addWidget(self.complex2, stretch=5)
+      leftLayout.addLayout(complex2Layout)
+
+      # Create and place the n field.
+      label = QLabel("n")
+      self.n = QLineEdit()
+      nLayout.addWidget(label, stretch=1)
+      nLayout.addWidget(self.n, stretch=5)
+      leftLayout.addLayout(nLayout)
+
+      # Create and place new form box.
+      label = QLabel("New form")
+      self.newForm = QComboBox()
+      self.newForm.addItems(["cartesian", "polar"])
+      self.newForm.setEditable(True)
+      self.newForm.setCurrentIndex(-1)
+      newFormLayout.addWidget(label, stretch=1)
+      newFormLayout.addWidget(self.newForm, stretch=5)
+      leftLayout.addLayout(newFormLayout)
+
+      # Create and place output form box.
+      label = QLabel("Output Form")
+      self.outputForm = QComboBox()
+      self.outputForm.addItems(["cartesian", "polar"])
+      self.outputForm.setEditable(True)
+      self.outputForm.setCurrentIndex(-1)
+      outputFormLayout.addWidget(label, stretch=1)
+      outputFormLayout.addWidget(self.outputForm, stretch=5)
+      leftLayout.addLayout(outputFormLayout)
+
+      # Create and place the calculate and clean buttons.
+      self.calculate = QPushButton(QIcon(calculatorPath), "Calculate")
+      self.calculate.clicked.connect(self.calculateResult)
+      self.clear = QPushButton(QIcon(cleanPath), "Clean")
+      self.clear.clicked.connect(self.clearWindow)
+      buttonsLayout.addWidget(self.calculate)
+      buttonsLayout.addWidget(self.clear)
+      leftLayout.addLayout(buttonsLayout)
+
+      # Create and place a text field to show the results.
+      self.result = QTextEdit()
+      self.result.setFontPointSize(12)
+      self.result.setReadOnly(True)
+      rightLayout.addWidget(self.result)
+
+      # Set the all parameters disabled defaultly.
+      self.disableParameters()
+ 
+      # Set the page layout to vectors window.
+      pageLayout.addLayout(leftLayout, stretch=1)
+      pageLayout.addLayout(rightLayout, stretch=1)
+      windowLayout.addLayout(pageLayout)
+      self.setLayout(windowLayout)
+
+   def disableParameters(self):
+      """ Disable the all method's parameters. """
+      for parameter in (self.complex1, self.complex2, self.n, self.newForm, 
+                        self.outputForm):
+         parameter.setDisabled(True)
+
+   def selectMethod(self):
+      """ Interest the selected method properties. """
+      text = self.selector.currentText()
+      self.calculate.setDisabled(False)
+      self.clear.setDisabled(False)
+
+      if text in ("iscartesian", "ispolar", "iszero", "real", "imaginary",
+                  "modules", "argument"):
+         self.complex1.setDisabled(False)
+      elif text in ("istriangle", "iseqaul"):
+         self.complex1.setDisabled(False)
+         self.complex2.setDisabled(False)
+      elif text in ("zero"):
+         self.outputForm.setDisabled(False)
+      elif text in ("transform"):
+         self.complex1.setDisabled(False)
+         self.newForm.setDisabled(False)
+      elif text in ("add", "subtract", "multiply", "divide"):
+         self.complex1.setDisabled(False)
+         self.complex2.setDisabled(False)
+         self.outputForm.setDisabled(False)
+      elif text in ("power", "root"):
+         self.complex1.setDisabled(False)
+         self.n.setDisabled(False)
+         self.outputForm.setDisabled(False)
+      elif text in ("conjugate", "reciprocol"):
+         self.complex1.setDisabled(False)
+         self.outputForm.setDisabled(False)
+
+   def calculateResult(self):
+      """ Calculate the results and then show in the plain text. """
+      text = self.selector.currentText()
+      arguments = [os.path.abspath("./alat-cli"), f"complexes_{text}"]
+
+      if text in ("iscartesian", "ispolar", "iszero", "real", "imaginary",
+                  "modules", "argument"):
+         arguments.append(self.complex1.text())
+      elif text in ("istriangle", "iseqaul"):
+         arguments.append(self.complex1.text())
+         arguments.append(self.complex2.text())
+      elif text in ("zero"):
+         arguments.append(self.outputForm.currentText())
+      elif text in ("transform"):
+         arguments.append(self.complex1.text())
+         arguments.append(self.newForm.currentText())
+      elif text in ("add", "subtract", "multiply", "divide"):
+         arguments.append(self.complex1.text())
+         arguments.append(self.complex2.text())
+         arguments.append(self.outputForm.currentText())
+      elif text in ("power", "root"):
+         arguments.append(self.complex1.text())
+         arguments.append(self.n.text())
+         arguments.append(self.outputForm.currentText())
+      elif text in ("conjugate", "reciprocol"):
+         arguments.append(self.complex1.text())
+         arguments.append(self.outputForm.currentText())
+
+      process = subprocess.run(arguments, capture_output=True, text=True)
+      self.result.setText(process.stdout)   
+
+   def closeEvent(self, event):
+      """ Clear the all elements when window is disappeared. """
+      self.selector.setCurrentIndex(-1)
+      self.complex1.clear()
+      self.complex2.clear()
+      self.n.clear()
+      self.newForm.setCurrentIndex(-1)
+      self.outputForm.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+      event.accept()
+
+   def clearWindow(self):
+      """ Clear the all elements in the window. """
+      self.selector.setCurrentIndex(-1)
+      self.complex1.clear()
+      self.complex2.clear()
+      self.n.clear()
+      self.newForm.setCurrentIndex(-1)
+      self.outputForm.setCurrentIndex(-1)
+      self.result.clear()
+      self.disableParameters()
+
+
+class Crypts(QWidget):
+   
+   def __init__(self):
+      super(Crypts, self).__init__()
+
+      # Set the window, color, margins and icon of crypts window.
+      self.setWindowTitle("Crypts")
+      self.setPalette(QColor(53, 53, 53))
+      self.setWindowIcon(QIcon(cryptPath))
+      self.setContentsMargins(10, 5, 10, 5)
+      self.setStyleSheet("QComboBox {background-color: rgb(42, 42, 42)}")
+
+      # Create the layouts of crypts window.
+      windowLayout = QVBoxLayout()
+      pageLayout = QHBoxLayout()
+      leftLayout = QVBoxLayout()
+      rightLayout = QVBoxLayout()
+      selectorLayout = QHBoxLayout()
+      buttonsLayout = QHBoxLayout()
+      messageLayout = QHBoxLayout()
+      encoderLayout = QHBoxLayout()
+      encodedLayout = QHBoxLayout()
+      rowLayout = QHBoxLayout()
+      columnLayout = QHBoxLayout()
+
+      # Create and place the header label.
+      label = QLabel("Crypts Module")
+      font = QFont()
+      font.setBold(True)
+      font.setPointSize(16)
+      label.setFont(font)
+      windowLayout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place a combo box to select the desired method.
+      methods = ["to_matrix", "encode", "decode", "to_message"]
+      label = QLabel("Method")
+      self.selector = QComboBox()
+      self.selector.addItems(methods)
+      self.selector.setEditable(True)
+      self.selector.setCurrentIndex(-1)
+      self.selector.editTextChanged.connect(self.selectMethod)
+      selectorLayout.addWidget(label, stretch=1)
+      selectorLayout.addWidget(self.selector, stretch=5)
+      leftLayout.addLayout(selectorLayout)
+
+      # Create and place the message field.
+      label = QLabel("Message")
+      self.message = QLineEdit()
+      messageLayout.addWidget(label, stretch=1)
+      messageLayout.addWidget(self.message, stretch=5)
+      leftLayout.addLayout(messageLayout)
+
+      # Create and place the encoder field.
+      label = QLabel("Encoder")
+      self.encoder = QLineEdit()
+      self.encoder.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5:7,4,-1")
+      encoderLayout.addWidget(label, stretch=1)
+      encoderLayout.addWidget(self.encoder, stretch=5)
+      leftLayout.addLayout(encoderLayout)
+
+      # Create and place the encoded field.
+      label = QLabel("Encoded")
+      self.encoded = QLineEdit()
+      self.encoded.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5:7,4,-1")
+      encodedLayout.addWidget(label, stretch=1)
+      encodedLayout.addWidget(self.encoded, stretch=5)
+      leftLayout.addLayout(encodedLayout)      
+
+      # Create and place the row field.
+      label = QLabel("Row")
+      self.row = QSpinBox()
+      self.row.setRange(1, 64)
+      rowLayout.addWidget(label, stretch=1)
+      rowLayout.addWidget(self.row, stretch=5)
+      leftLayout.addLayout(rowLayout)
+
+      # Create and place the column field.
+      label = QLabel("Column")
+      self.column = QSpinBox()
+      self.column.setRange(1, 64)
+      columnLayout.addWidget(label, stretch=1)
+      columnLayout.addWidget(self.column, stretch=5)
+      leftLayout.addLayout(columnLayout)
+
+      # Create and place the calculate and clean buttons.
+      self.calculate = QPushButton(QIcon(calculatorPath), "Calculate")
+      self.calculate.clicked.connect(self.calculateResult)
+      self.clear = QPushButton(QIcon(cleanPath), "Clean")
+      self.clear.clicked.connect(self.clearWindow)
+      buttonsLayout.addWidget(self.calculate)
+      buttonsLayout.addWidget(self.clear)
+      leftLayout.addLayout(buttonsLayout)
+
+      # Create and place a text field to show the results.
+      self.result = QTextEdit()
+      self.result.setFontPointSize(12)
+      self.result.setReadOnly(True)
+      rightLayout.addWidget(self.result)
+
+      # Set the all parameters disabled defaultly.
+      self.disableParameters()
+ 
+      # Set the page layout to vectors window.
+      pageLayout.addLayout(leftLayout, stretch=1)
+      pageLayout.addLayout(rightLayout, stretch=1)
+      windowLayout.addLayout(pageLayout)
+      self.setLayout(windowLayout)
+
+   def disableParameters(self):
+      """ Disable the all method's parameters. """
+      for parameter in (self.message, self.encoder, self.encoded, self.row, 
+                        self.column, self.calculate, self.clear):
+         parameter.setDisabled(True)
+
+   def selectMethod(self):
+      """ Interest the selected method properties. """
+      text = self.selector.currentText()
+      self.calculate.setDisabled(False)
+      self.clear.setDisabled(False)
+
+      if text in ("to_matrix"):
+         self.message.setDisabled(False)
+         self.row.setDisabled(False)
+         self.column.setDisabled(False)
+      elif text in ("encode"):
+         self.message.setDisabled(False)
+         self.encoder.setDisabled(False)
+      elif text in ("decode", "to_message"):
+         self.encoded.setDisabled(False)
+         self.encoder.setDisabled(False)
+
+   def calculateResult(self):
+      """ Calculate the results and then show in the plain text. """
+      text = self.selector.currentText()
+      arguments = [os.path.abspath("./alat-cli"), f"crypts_{text}"]
+
+      if text in ("to_matrix"):
+         arguments.append(self.message.text())
+         arguments.append(self.row.text() + "," + self.column.text())
+      elif text in ("encode"):
+         arguments.append(self.message.text())
+         arguments.append(self.encoder.text())
+      elif text in ("decode", "to_message"):
+         arguments.append(self.encoded.text())
+         arguments.append(self.encoded.text())
+
+      process = subprocess.run(arguments, capture_output=True, text=True)
+      self.result.setText(process.stdout)   
+
+   def closeEvent(self, event):
+      """ Clear the all elements when window is disappeared. """
+      self.selector.setCurrentIndex(-1)
+      self.message.clear()
+      self.row.setValue(1)
+      self.column.setValue(1)
+      self.encoded.clear()
+      self.encoder.clear()
+      self.result.clear()
+      self.disableParameters()
+      event.accept()
+
+   def clearWindow(self):
+      """ Clear the all elements in the window. """
+      self.selector.setCurrentIndex(-1)
+      self.message.clear()
+      self.row.setValue(1)
+      self.column.setValue(1)
+      self.encoded.clear()
+      self.encoder.clear()
+      self.result.clear()
+      self.disableParameters()
+
+
+class Apps(QWidget):
+   
+   def __init__(self):
+      super(Apps, self).__init__()
+
+      # Set the window, color, margins and icon of crypts window.
+      self.setWindowTitle("Apps")
+      self.setPalette(QColor(53, 53, 53))
+      self.setWindowIcon(QIcon(appPath))
+      self.setContentsMargins(10, 5, 10, 5)
+      self.setStyleSheet("QComboBox {background-color: rgb(42, 42, 42)}")
+
+      # Create the layouts of apps window.
+      windowLayout = QVBoxLayout()
+      pageLayout = QHBoxLayout()
+      leftLayout = QVBoxLayout()
+      rightLayout = QVBoxLayout()
+      selectorLayout = QHBoxLayout()
+      buttonsLayout = QHBoxLayout()
+      xvectorLayout = QHBoxLayout()
+      yvectorLayout = QHBoxLayout()
+      zvectorLayout = QHBoxLayout()
+
+      # Create and place the header label.
+      label = QLabel("Apps Module")
+      font = QFont()
+      font.setBold(True)
+      font.setPointSize(16)
+      label.setFont(font)
+      windowLayout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place a combo box to select the desired method.
+      methods = ["poly_curve_fitting", "least_squares_reg", "area", "volume"]
+      label = QLabel("Method")
+      self.selector = QComboBox()
+      self.selector.addItems(methods)
+      self.selector.setEditable(True)
+      self.selector.setCurrentIndex(-1)
+      self.selector.editTextChanged.connect(self.selectMethod)
+      selectorLayout.addWidget(label, stretch=1)
+      selectorLayout.addWidget(self.selector, stretch=5)
+      leftLayout.addLayout(selectorLayout)
+
+      # Create and place the x vector field.
+      label = QLabel("X Vector")
+      self.xvector = QLineEdit()
+      self.xvector.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5,6")
+      xvectorLayout.addWidget(label, stretch=1)
+      xvectorLayout.addWidget(self.xvector, stretch=5)
+      leftLayout.addLayout(xvectorLayout)
+
+      # Create and place the y vector field.
+      label = QLabel("Y Vector")
+      self.yvector = QLineEdit()
+      self.yvector.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5,6")
+      yvectorLayout.addWidget(label, stretch=1)
+      yvectorLayout.addWidget(self.yvector, stretch=5)
+      leftLayout.addLayout(yvectorLayout)
+
+      # Create and place the z vector field.
+      label = QLabel("Z Vector")
+      self.zvector = QLineEdit()
+      self.zvector.setPlaceholderText("DON'T use spaces,  e.g. 7,1,5,6")
+      zvectorLayout.addWidget(label, stretch=1)
+      zvectorLayout.addWidget(self.zvector, stretch=5)
+      leftLayout.addLayout(zvectorLayout)
+
+      # Create and place the calculate and clean buttons.
+      self.calculate = QPushButton(QIcon(calculatorPath), "Calculate")
+      self.calculate.clicked.connect(self.calculateResult)
+      self.clear = QPushButton(QIcon(cleanPath), "Clean")
+      self.clear.clicked.connect(self.clearWindow)
+      buttonsLayout.addWidget(self.calculate)
+      buttonsLayout.addWidget(self.clear)
+      leftLayout.addLayout(buttonsLayout)
+
+      # Create and place a text field to show the results.
+      self.result = QTextEdit()
+      self.result.setFontPointSize(12)
+      self.result.setReadOnly(True)
+      rightLayout.addWidget(self.result)
+
+      # Set the all parameters disabled defaultly.
+      self.disableParameters()
+ 
+      # Set the page layout to vectors window.
+      pageLayout.addLayout(leftLayout, stretch=1)
+      pageLayout.addLayout(rightLayout, stretch=1)
+      windowLayout.addLayout(pageLayout)
+      self.setLayout(windowLayout)
+
+   def disableParameters(self):
+      """ Disable the all method's parameters. """
+      for parameter in (self.xvector, self.yvector, self.zvector, 
+                        self.calculate, self.clear):
+         parameter.setDisabled(True)
+
+   def selectMethod(self):
+      """ Interest the selected method properties. """
+      text = self.selector.currentText()
+      self.calculate.setDisabled(False)
+      self.clear.setDisabled(False)
+
+      if text in ("poly_curve_fitting", "least_sqaures_reg", "area"):
+         self.xvector.setDisabled(False)
+         self.yvector.setDisabled(False)
+      elif text in ("volume"):
+         self.xvector.setDisabled(False)
+         self.yvector.setDisabled(False)
+         self.zvector.setDisabled(False)
+
+   def calculateResult(self):
+      """ Calculate the results and then show in the plain text. """
+      text = self.selector.currentText()
+      arguments = [os.path.abspath("./alat-cli"), f"apps_{text}"]
+
+      if text in ("poly_curve_fitting", "least_sqaures_reg", "area"):
+         arguments.append(self.xvector.text())
+         arguments.append(self.yvector.text())
+      elif text in ("volume"):
+         arguments.append(self.xvector.text())
+         arguments.append(self.yvector.text())
+         arguments.append(self.zvector.text())
+
+      process = subprocess.run(arguments, capture_output=True, text=True)
+      self.result.setText(process.stdout)   
+
+   def closeEvent(self, event):
+      """ Clear the all elements when window is disappeared. """
+      self.selector.setCurrentIndex(-1)
+      self.xvector.clear()
+      self.yvector.clear()
+      self.zvector.clear()
+      self.disableParameters()
+      event.accept()
+
+   def clearWindow(self):
+      """ Clear the all elements in the window. """
+      self.selector.setCurrentIndex(-1)
+      self.xvector.clear()
+      self.yvector.clear()
+      self.zvector.clear()
+      self.disableParameters()
+
+
+class ALAT(QMainWindow):
+   """ ALAT (Advanced Linear Algebra Toolkit) GUI 
+   
+   This program was designed to use ALAT project as graphical user interface. 
+   """
+
+   def __init__(self):
+      super(ALAT, self).__init__()
+
+      # Set the window title, color and margins of the main window.
+      self.setWindowTitle("ALAT - Advanced Linear Algebra Toolkit")
+      self.setPalette(QColor(53, 53, 53))
+      self.setContentsMargins(40, 10, 40, 10)
+      self.setWindowIcon(QIcon(alatPath))
+
+      # Create a sub-windows. Each sub-window corresponds to one module. 
+      self.matricesWindow = Matrices()
+      self.vectorsWindow = Vectors()
+      self.complexesWindow = Complexes()
+      self.cryptsWindow = Crypts()
+      self.appsWindow = Apps()
+
+      # Create the layouts to align the widgets in main window.
+      pageLayout = QVBoxLayout()
+      buttonLayout = QVBoxLayout()
+      uButtonLayout = QHBoxLayout()
+      lButtonLayout = QHBoxLayout() 
+
+      # Create and place the header layer.
+      headerLabel = QLabel("ALAT - Advanced Linear Algebra Toolkit")
+      font = headerLabel.font()
+      font.setBold(True)
+      font.setPointSize(18)
+      headerLabel.setFont(font)
+      pageLayout.addWidget(headerLabel, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place the version number layer.
+      versionLabel = QLabel("v2.0.1")
+      font = versionLabel.font()
+      font.setPointSize(16)
+      versionLabel.setFont(font)
+      pageLayout.addWidget(versionLabel, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      # Create and place the body text that describes the project.
+      bodyLabel = QLabel("""                   
+ALAT is a collection of linear algerba applications and offers so 
+many techniques to automate calculations. I've developed this 
+project to help me in linear algebra lesson, and then noticed that 
+it has became bigger than I thought. So I decided to pack all of 
+the tehniques, calculations and methods in one project and than 
+ALAT was born. In this process, I've made so many major changes. 
+Lately, I'm publishing the lastest version of this project. I've 
+separated ALAT into 5 different modules. These are matrices, 
+vectors, complexes, crypts, apps.\n""")
+      pageLayout.addWidget(bodyLabel, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create and place the push buttons. Each button opens the related module.
+      uButtons = [" Matrices", " Vectors", "Complexes"]
+      uIcons = [matrixPath, vectorPath, complexPath]
+      lButtons = [" Crypts", " Apps"]
+      lIcons = [cryptPath, appPath]
+      slots = [self.matricesButton, self.vectorsButton, self.complexesButton, 
+               self.cryptsButton, self.appsButton]
+      index = 0
+
+      for i in range(len(uButtons)):
+         pushButton = QPushButton(QIcon(uIcons[i]), "%s" % uButtons[i])
+         pushButton.setIconSize(QSize(18, 18))
+         pushButton.setFixedSize(140, 50)
+         pushButton.clicked.connect(slots[index])
+         uButtonLayout.addWidget(pushButton)
+         index += 1
+      for i in range(len(lButtons)):
+         pushButton = QPushButton(QIcon(lIcons[i]), "%s" % lButtons[i])
+         pushButton.setIconSize(QSize(18, 18))
+         pushButton.setFixedSize(213, 50)
+         pushButton.clicked.connect(slots[index])
+         lButtonLayout.addWidget(pushButton)
+         index += 1
+
+      buttonLayout.addLayout(uButtonLayout)
+      buttonLayout.addLayout(lButtonLayout)
+      pageLayout.addLayout(buttonLayout)
+
+      # Create and place the tail label.
+      tailLabel = QLabel("\n\n\u00A9 All Rights Reserved")
+      font = tailLabel.font()
+      font.setPointSize(10)
+      tailLabel.setFont(font)
+      pageLayout.addWidget(tailLabel, alignment=Qt.AlignmentFlag.AlignCenter)
+
+      # Create a container that compress all the elements in main window.
+      container = QWidget()
+      container.setLayout(pageLayout)
+
+      # Set the container as central widget so that each 
+      # element is placed sequentially in the main window. 
+      self.setCentralWidget(container)
+ 
+   def matricesButton(self):
+      """ Open the matrces module window from main window. """
+      self.matricesWindow.show()
+
+   def vectorsButton(self):
+      """ Open the vectors module window from main window. """
+      self.vectorsWindow.show()
+
+   def complexesButton(self, event):
+      """ Open the complexes module window from main window. """
+      self.complexesWindow.show()
+
+   def cryptsButton(self, event):
+      """ Open the crypts module window from main window. """
+      self.cryptsWindow.show()
+
+   def appsButton(self, event):
+      """ Open the apps module window from main window. """
+      self.appsWindow.show()
+
+
+if __name__ == "__main__":
+
+   app = QApplication(sys.argv)
+   
+   alat = ALAT()
+   alat.show()
+
+   sys.exit(app.exec())
+   
