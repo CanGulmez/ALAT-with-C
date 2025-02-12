@@ -1,0 +1,574 @@
+#!/usr/bin/python3
+
+import sys, os 
+from PySide6.QtCore import Qt 
+from PySide6.QtGui import QColor, QIcon
+from PySide6.QtWidgets import (
+   QApplication,
+   QMainWindow,
+   QWidget,
+   QLabel,
+   QHBoxLayout,
+   QVBoxLayout,
+   QPushButton,
+   QComboBox,
+   QTextEdit,
+   QLineEdit,
+   QSpinBox
+)
+import subprocess
+
+# General constants and definations
+MAX_ROW           = 64
+MAX_COL           = 64
+MAX_DIM           = MAX_ROW * MAX_COL
+MAX_LEN           = MAX_DIM
+MAX_N             = 100
+
+CALCULATE_PATH    = "./icons/calculate.png"
+SAVE_PATH         = "./icons/save.png"
+CLEAR_PATH        = "./icons/clean.png"
+HELP_PATH         = "./icons/help.png"
+
+SAVE_DIR          = os.path.abspath("./results")
+
+ALAT_BOOL         = ["true", "false"]
+ALAT_AXIS         = ["horizontal", "vertical"]
+ALAT_COOR         = ["cartesian", "cylindrical", "spherical"]
+ALAT_FORM         = ["decimal", "radians", "degrees"]
+ALAT_FORMAT       = ["algebraic", "polar"]
+
+ALAT_MODULES = ["matrices", "vectors", "complexes", "crypts", "apps"]
+ALAT_MATRICES = [
+   "issquare", "ishomogen", "iszeros", "isones", "isarbitrary", "isidentity", 
+   "islowertri", "isuppertri", "isdiagonal", "issymmetric", "isequal", "istriangle",
+   "isinvertible", "shape", "zeros", "ones", "identity", "arbitrary", "sequential",
+   "random", "uniform", "randint", "diagonal", "max", "min", "value", "argmax", 
+   "argmin", "mean", "stddev", "median", "norm_one", "norm_infinity", "norm_frobenius",
+   "rank", "abs", "pow", "sqrt", "root", "degrees", "radians", "subset", "insert_row",
+   "insert_col", "append_row", "append_col", "remove_row", "remove_col", "pop_row",
+   "pop_col", "sort", "sum", "shuffle", "reshape", "transpose", "concat", "add", "sub",
+   "scalar_mul", "dot_mul", "cross_mul", "scalar_div", "swap", "dot_div", "uppertri", 
+   "lowertri", "det", "minors", "cofactors", "adjoint", "solve"
+]
+ALAT_VECTORS = [
+   "transform", "iscartesian", "iscylindrical", "isspherical", "iszeros", "isones", 
+   "isequal", "isarbitrary", "iscacs", "istriangle", "ispythagorean", "issteep", 
+   "isparallel", "car_n", "car_x", "car_y", "car_z", "cyl_radial", "cyl_angular", 
+   "cyl_z", "sph_radial", "sph_polar", "shp_azimuthal", "zeros", "ones", "arbitrary",
+   "sequential", "random", "uniform", "randint", "dim", "coor", "lenght", "magnitude",
+   "abs", "pow", "root", "sqrt", "unit", "add", "sub", "scalar_mul", "distance", 
+   "cross_mul", "project", "reflect", "interpolate", "angle"
+]
+ALAT_COMPLEXES = [
+   "transform", "isalgebraic", "ispolar", "istriangle", "isequal", "zero", "real", 
+   "imaginary", "magnitude", "argument", "sin", "cos", "tan", "sinh", "cosh", 
+   "tanh", "asin", "acos", "asinh", "acosh", "log", "logx", "log2", "log10", "add", 
+   "scalar_mul", "scalar_div", "sub", "mul", "div", "pow", "root", "sqrt", "conjugate",
+   "reciprocol"
+]
+ALAT_CRYPTS = ["to_matrix", "encode", "decode", "to_message"]
+ALAT_APPS = ["poly_curve_fitting", "least_squares_reg", "area", "volume"]
+
+ALAT_DESC = "\
+ALAT (Advanced Linear Algebra Toolkit) is designed to automate for linear algebratic calculations.\n\
+This toolkit offers five modules and related methods. These are 'matrices', 'vectors', 'complexes',\n\
+'crypts', 'apps'. Matrices module implements matrix operation from basic matrix multiplication to\n\
+advanced solving a linear equation. Vectors module encompresses vector operations in which\n\
+vectors can be defined in three coordinate systems. Complexes module defines the complex\n\
+number operations and its different defination types. Crypts module gives four cryptography\n\
+operations to encode/decode messages. Apps module includes real-world algebratic problems.\n"
+
+ALAT_LONG_DESC = "\
+Usage: ./alat MODULE METHOD [PARAMS...]\n\n\
+NOTE: Please follow source code implementations to use properly.\n\n\
+General usage rules:\n\
+- Do not use any spaces when defining any kind of structure.\n\
+- Use comma and colon to define matrix such as '4,7:2,1' (2x2 matrix).\n\
+- Use comma to define matrix shapes such as '8,8' (8x8 shape)\n\
+- Use comma and informative coordinate system name to define vector such\n\
+  'as 4,1,2,car' (3-dim vector in cartesian). You can use full coordinate name or\n\
+  first three letters.\n\
+- Use comma and informative format to define complex number such as '4,7,alg'\n\
+  (4 + 7i in algebraic format). You can use full format name or first three letters.\n\
+- Use comma to define points on a axis such as '1,4,5,7' (4 points on a axis).\n\
+- Use 'true' and 'false' for the boolean parameters.\n\
+- Use 'horizontal' and 'vertical' or first three letters to define axis.\n\
+- Use 'cartesian', 'cylindrical' and 'spherical' or first three letters to define\n\
+  coordinate system.\n\
+- Use 'decimal', 'radians' and 'degrees' or first three letters to define angle.\n\
+- Use 'algebraic' and 'polar' or first three letters to define complex numbers.\n\n\
+About maintainer:\n\
+- Author: Ahmet Can GULMEZ\n\
+- E-Mail: ahmetcangulmez02@gmail.com\n\
+- Version: 2.1.0\n\
+- License: MIT License\
+"
+
+class Help(QWidget):
+   
+   def __init__(self):
+      super(Help, self).__init__()
+      
+      self.setWindowTitle("Help")
+      self.setPalette(QColor(28, 28, 28))
+      
+      self.page_layout = QVBoxLayout()
+      
+      self.header_label = QLabel("ALAT - Advanced Linear Algebra Toolkit")
+      font = self.header_label.font()
+      font.setBold(True)
+      font.setPointSize(14)
+      self.header_label.setFont(font)
+      self.page_layout.addWidget(self.header_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.version_label = QLabel("v2.1.0\n")
+      font = self.version_label.font()
+      font.setPointSize(12)
+      self.version_label.setFont(font)
+      self.page_layout.addWidget(self.version_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.long_desc_label = QLabel(ALAT_LONG_DESC)
+      self.page_layout.addWidget(self.long_desc_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.page_layout.addStretch()
+      
+      self.setLayout(self.page_layout)      
+
+class ALAT(QMainWindow):
+   
+   def __init__(self):
+      super(ALAT, self).__init__()
+      
+      self.setWindowTitle("ALAT - Advanced Linear Algebra Toolkit")
+      self.showMaximized()
+      self.setPalette(QColor(28, 28, 28))
+      self.setStyleSheet("QCombobox {background-color: rgb(20, 20, 20)}")
+      
+      self.page_layout = QHBoxLayout()
+      self.left_layout = QVBoxLayout()
+      self.right_layout = QVBoxLayout()
+      self.module_layout = QHBoxLayout()
+      self.method_layout = QHBoxLayout()
+      self.module_method_layout = QHBoxLayout()
+      self.buttons_layout = QHBoxLayout()
+      self.parameter_layouts = [QHBoxLayout() for _ in range(40)]
+      
+      self.help_window = Help()
+      self.results_text = ""
+      
+      self.header_label = QLabel("\nALAT - Advanced Linear Algebra Toolkit")
+      font = self.header_label.font()
+      font.setBold(True)
+      font.setPointSize(20)
+      self.header_label.setFont(font)
+      self.left_layout.addWidget(self.header_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.version_label = QLabel("v2.1.0\n")
+      font = self.version_label.font()
+      font.setPointSize(12)
+      self.version_label.setFont(font)
+      self.left_layout.addWidget(self.version_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.desc_label = QLabel(ALAT_DESC)
+      self.left_layout.addWidget(self.desc_label, alignment=Qt.AlignmentFlag.AlignLeft)
+      
+      self.module_label = QLabel("Module:")
+      self.module_box = QComboBox()
+      self.module_box.addItems(ALAT_MODULES)
+      self.module_box.setCurrentIndex(-1)
+      self.module_box.setFixedHeight(30)
+      self.module_box.currentTextChanged.connect(self.select_module)
+      self.module_layout.addWidget(self.module_label, stretch=1)
+      self.module_layout.addWidget(self.module_box, stretch=5)
+      self.module_layout.setContentsMargins(0, 0, 10, 0)
+      
+      self.method_label = QLabel("Method:")
+      self.method_box = QComboBox()
+      self.method_box.setFixedHeight(30)
+      self.method_box.setMaxVisibleItems(10)
+      self.method_box.currentTextChanged.connect(self.select_method)
+      self.method_layout.addWidget(self.method_label, stretch=1)
+      self.method_layout.addWidget(self.method_box, stretch=5)
+      self.method_layout.setContentsMargins(10, 0, 0, 0)
+   
+      self.module_method_layout.addLayout(self.module_layout)
+      self.module_method_layout.addLayout(self.method_layout)
+      self.module_method_layout.setContentsMargins(0, 0, 0, 20)
+      self.left_layout.addLayout(self.module_method_layout)
+      
+      self.parameter_labels = [
+         QLabel("First matrix:"), QLabel("Second matrix:"), QLabel("Value:"), 
+         QLabel("Start:"), QLabel("End:"), QLabel("Row:"), QLabel("Col:"), 
+         QLabel("First crow:"), QLabel("First ccol:"), QLabel("Second crow:"), 
+         QLabel("Second ccol"), QLabel("Reverse:"), QLabel("Axis:"), QLabel("N:"), 
+         QLabel("Scalar:"), QLabel("First vector:"), QLabel("Second Vector"), 
+         QLabel("N:"), QLabel("Value:"), QLabel("Scalar:"), QLabel("Start:"), 
+         QLabel("End:"), QLabel("Dimension:"), QLabel("Factor:"), QLabel("Form:"), 
+         QLabel("Coordinate:"), QLabel("First complex:"), QLabel("Second complex:"), 
+         QLabel("X:"), QLabel("Scalar:"), QLabel("N:"), QLabel("Format:"), 
+         QLabel("Message:"), QLabel("Encoded:"), QLabel("Encoder"), QLabel("Row:"),
+         QLabel("Col"), QLabel("X axis points:"), QLabel("Y axis points:"), 
+         QLabel("Z axis points:") 
+      ]
+      self.parameter_widgets = [
+         QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), QSpinBox(),
+         QSpinBox(), QSpinBox(), QSpinBox(), QSpinBox(), QSpinBox(), QComboBox(), 
+         QComboBox(), QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), 
+         QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), QSpinBox(), QLineEdit(), 
+         QComboBox(), QComboBox(), QLineEdit(), QLineEdit(), QLineEdit(), QLineEdit(), 
+         QLineEdit(), QComboBox(), QLineEdit(), QLineEdit(), QLineEdit(), QSpinBox(), 
+         QSpinBox(), QLineEdit(), QLineEdit(), QLineEdit()
+      ]
+      self.parameter_widgets[0].setPlaceholderText("Do not use spaces, 4,7:2,6 (2x2 matrix)")
+      self.parameter_widgets[1].setPlaceholderText("Do not use spaces, 4,7:2,6 (2x2 matrix)")
+      self.parameter_widgets[5].setRange(1, MAX_ROW)
+      self.parameter_widgets[6].setRange(1, MAX_COL)
+      self.parameter_widgets[7].setRange(1, MAX_ROW)
+      self.parameter_widgets[8].setRange(1, MAX_COL)
+      self.parameter_widgets[9].setRange(1, MAX_ROW)
+      self.parameter_widgets[10].setRange(1, MAX_COL)
+      self.parameter_widgets[11].addItems(ALAT_BOOL)
+      self.parameter_widgets[12].addItems(ALAT_AXIS)
+      self.parameter_widgets[15].setPlaceholderText("Do not use spaces, 4,2,6,car (3-dim cartesian vector)")
+      self.parameter_widgets[16].setPlaceholderText("Do not use spaces, 4,2,6,sph (3-dim spherical vector)")
+      self.parameter_widgets[22].setRange(1, MAX_DIM)
+      self.parameter_widgets[24].addItems(ALAT_FORM)
+      self.parameter_widgets[25].addItems(ALAT_COOR)
+      self.parameter_widgets[26].setPlaceholderText("Do not use spaces, 4,7,alg (4+7i algebraic complex number)")
+      self.parameter_widgets[27].setPlaceholderText("Do not use spaces, 2,120,pol (2<120 polar complex number)")
+      self.parameter_widgets[31].addItems(ALAT_FORMAT)
+      self.parameter_widgets[33].setPlaceholderText("Do not use spaces, 4,7:2,6 (2x2 matrix)")
+      self.parameter_widgets[34].setPlaceholderText("Do not use spaces, 4,7:2,6 (2x2 matrix)")
+      self.parameter_widgets[35].setRange(1, MAX_ROW)
+      self.parameter_widgets[36].setRange(1, MAX_COL)
+      self.parameter_widgets[37].setPlaceholderText("Do not use spaces, 4,7,2 (3 points on X axis)")
+      self.parameter_widgets[38].setPlaceholderText("Do not use spaces, 4,7,2 (3 points on Y axis)")
+      self.parameter_widgets[39].setPlaceholderText("Do not use spaces, 4,7,2 (3 points on Z axis)")
+      
+      for i in range(len(self.parameter_layouts)):
+         self.parameter_labels[i].setFixedHeight(30)
+         self.parameter_widgets[i].setFixedHeight(30)
+         self.parameter_layouts[i].addWidget(self.parameter_labels[i], stretch=1)
+         self.parameter_layouts[i].addWidget(self.parameter_widgets[i], stretch=5)
+         self.left_layout.addLayout(self.parameter_layouts[i])
+         self.parameter_labels[i].setVisible(False)
+         self.parameter_widgets[i].setVisible(False)
+
+      self.left_layout.addStretch()
+      
+      self.control_buttons = [
+         QPushButton(QIcon(CALCULATE_PATH), "Calculate"),
+         QPushButton(QIcon(SAVE_PATH), "Save Results"),
+         QPushButton(QIcon(CLEAR_PATH), "Clear"),
+         QPushButton(QIcon(HELP_PATH), "Help")
+      ]
+      for control_button in self.control_buttons:
+         control_button.setFixedHeight(30)
+         control_button.setDisabled(True)
+         self.buttons_layout.addWidget(control_button)
+      self.left_layout.addLayout(self.buttons_layout)
+      
+      self.control_buttons[0].clicked.connect(self.calculate_button)
+      self.control_buttons[1].clicked.connect(self.save_results_button)
+      self.control_buttons[2].clicked.connect(self.clear_button)
+      self.control_buttons[3].clicked.connect(self.help_button)
+      
+      self.copyright_label = QLabel("\n\u00A9 All Right Reserved\n")
+      font = self.copyright_label.font()
+      font.setPointSize(10)
+      self.copyright_label.setFont(font)
+      self.left_layout.addWidget(self.copyright_label, alignment=Qt.AlignmentFlag.AlignCenter)
+      
+      self.textedit = QTextEdit()
+      self.textedit.setReadOnly(True)
+      self.textedit.setPlaceholderText("Press 'Calculate' to see results...")
+      self.textedit.setFontPointSize(12)
+      self.right_layout.addWidget(self.textedit)
+      
+      self.container = QWidget()
+      self.left_layout.setContentsMargins(0, 0, 10, 0)
+      self.page_layout.addLayout(self.left_layout, stretch=1)
+      self.page_layout.addLayout(self.right_layout, stretch=1)
+      self.page_layout.setContentsMargins(50, 10, 50, 10)
+      self.container.setLayout(self.page_layout)
+      self.setCentralWidget(self.container)
+      
+   def select_module(self):
+      """ Select the module and then upload the related operations. """
+      self.method_box.clear()
+      
+      if self.module_box.currentText() == "matrices":
+         self.method_box.addItems(ALAT_MATRICES)
+      elif self.module_box.currentText() == "vectors":
+         self.method_box.addItems(ALAT_VECTORS)
+      elif self.module_box.currentText() == "complexes":
+         self.method_box.addItems(ALAT_COMPLEXES)
+      elif self.module_box.currentText() == "crypts":
+         self.method_box.addItems(ALAT_CRYPTS)
+      else:
+         self.method_box.addItems(ALAT_APPS)
+         
+      for control_button in self.control_buttons:
+         control_button.setEnabled(True)
+         
+   def select_method(self):
+      """ Select the method and then show the related paameter settings. """
+      module_text = self.module_box.currentText()
+      method_text = self.method_box.currentText()
+      self.visible_set = []
+      
+      if module_text == "matrices":
+         if method_text in ("issquare", "ishomogen", "iszeros", "isones", "isidentity",
+            "islowertri", "isuppertri", "isdiagonal", "issymmetric", "istriangle", 
+            "isinvertible", "max", "min", "diagonal", "mean", "stddev", "median", 
+            "norm_one", "norm_infinity", "norm_frobenius", "rank", "abs", "sqrt", 
+            "degrees", "radians", "pop_row", "pop_col", "shuffle", "transpose", "swap",
+            "det", "minors", "cofactors", "adjoint", "inverse", "uppertri", "lowertri",
+            "solve", "shape"):
+            self.visible_set.append(0)
+         elif method_text in ("isequal", "add", "sub", "dot_mul", "cross_mul", "dot_div"):
+            self.visible_set.append(0)
+            self.visible_set.append(1)
+         elif method_text in ("scalar_mul", "scalar_div"):
+            self.visible_set.append(0)
+            self.visible_set.append(14)
+         elif method_text in ("pow", "root"):
+            self.visible_set.append(0)
+            self.visible_set.append(13)
+         elif method_text in ("isarbitrary"):
+            self.visible_set.append(0)
+            self.visible_set.append(2)
+         elif method_text in ("zeros", "ones", "identity", "random"):
+            self.visible_set.append(5)
+            self.visible_set.append(6)
+         elif method_text in ("argmax", "argmin", "sort"):
+            self.visible_set.append(0)
+            self.visible_set.append(11)
+         elif method_text in ("uniform", "randint", "sequential"):
+            self.visible_set.append(3)
+            self.visible_set.append(4)
+            self.visible_set.append(5)
+            self.visible_set.append(6)
+         elif method_text in ("arbitrary"):
+            self.visible_set.append(3)
+            self.visible_set.append(5)
+            self.visible_set.append(6)
+         elif method_text in ("value"):
+            self.visible_set.append(0)
+            self.visible_set.append(7)
+            self.visible_set.append(8)
+         elif method_text == "subset":
+            self.visible_set.append(0)
+            self.visible_set.append(7)
+            self.visible_set.append(8)
+            self.visible_set.append(9)
+            self.visible_set.append(10)
+         elif method_text in ("insert_row"):
+            self.visible_set.append(0)
+            self.visible_set.append(2)
+            self.visible_set.append(7)
+         elif method_text in ("insert_col"):
+            self.visible_set.append(0)
+            self.visible_set.append(2)
+            self.visible_set.append(8)
+         elif method_text in ("append_row", "append_col"):
+            self.visible_set.append(0)
+            self.visible_set.append(2)
+         elif method_text in ("remove_row"):
+            self.visible_set.append(0)
+            self.visible_set.append(7)
+         elif method_text in ("remove_col"):
+            self.visible_set.append(0)
+            self.visible_set.append(8)
+         elif method_text in ("sum"):
+            self.visible_set.append(0)
+            self.visible_set.append(12)
+         elif method_text in ("reshape"):
+            self.visible_set.append(0)
+            self.visible_set.append(5)
+            self.visible_set.append(6)
+         elif method_text in ("concat"):
+            self.visible_set.append(0)
+            self.visible_set.append(1)
+            self.visible_set.append(12)
+      elif module_text == "vectors":
+         if method_text in ("iscartesian", "iscylindrical", "isspherical", "iszeros",
+            "isones", "car_n", "car_x", "car_y", "car_z", "cyl_radial", "cyl_angular",
+            "sph_radial", "sph_polar", "sph_azimuthal", "dim", "coor", "lenght", 
+            "magnitude"):
+            self.visible_set.append(15)
+         elif method_text in ("iseqaul", "iscasc", "istriangle", "ispythagorean",
+            "issteep", "isparallel", "distance", "dot_mul"):
+            self.visible_set.append(15)
+            self.visible_set.append(16)
+         elif method_text in ("transform", "abs", "sqrt", "unit"):
+            self.visible_set.append(15)
+            self.visible_set.append(25)
+         elif method_text in ("add", "sub", "cross_mul", "project", "reflect"):
+            self.visible_set.append(15)
+            self.visible_set.append(16)
+            self.visible_set.append(25)
+         elif method_text in ("zeros", "ones", "random"):
+            self.visible_set.append(22)
+            self.visible_set.append(25)
+         elif method_text in ("uniform", "randint", "sequential"):
+            self.visible_set.append(20)
+            self.visible_set.append(21)
+            self.visible_set.append(22)
+            self.visible_set.append(25)
+         elif method_text in ("pow", "root"):
+            self.visible_set.append(15)
+            self.visible_set.append(17)
+            self.visible_set.append(25)
+         elif method_text in ("isarbitrary"):
+            self.visible_set.append(15)
+            self.visible_set.append(18)
+         elif method_text in ("arbitrary"):
+            self.visible_set.append(18)
+            self.visible_set.append(22)
+            self.visible_set.append(25)
+         elif method_text in ("scalar_mul"):
+            self.visible_set.append(15)
+            self.visible_set.append(19)
+            self.visible_set.append(25)
+         elif method_text in ("interpolate"):
+            self.visible_set.append(15)
+            self.visible_set.append(16)
+            self.visible_set.append(23)
+            self.visible_set.append(25)
+         elif method_text in ("angle"):
+            self.visible_set.append(15)
+            self.visible_set.append(16)
+            self.visible_set.append(24)
+      elif module_text == "complexes":
+         if method_text in ("isalgebraic", "ispolar", "real", "imaginary", 
+            "magnitude", "argument"):
+            self.visible_set.append(26)
+         elif method_text == "log":
+            self.visible_set.append(26)
+            self.visible_set.append(31)
+         elif method_text in ("sin", "cos", "tan", "sinh", "cosh", "tanh", "asin",
+            "acos", "asinh", "acosh", "log2", "log10", "sqrt", "conjugate",
+            "reciprocol", "transform"):
+            self.visible_set.append(26)
+            self.visible_set.append(31)
+         elif method_text in ("istriangle", "isequal"):
+            self.visible_set.append(26)
+            self.visible_set.append(27)
+         elif method_text in ("zero"):
+            self.visible_set.append(31)
+         elif method_text in ("scalar_mul", "scalar_div"):
+            self.visible_set.append(26)
+            self.visible_set.append(29)
+            self.visible_set.append(31)
+         elif method_text in ("add", "sub", "mul", "div"):
+            self.visible_set.append(26)
+            self.visible_set.append(27)
+            self.visible_set.append(31)
+         elif method_text in ("pow", "root"):
+            self.visible_set.append(26)
+            self.visible_set.append(30)
+            self.visible_set.append(31)
+         elif method_text in ("logx"):
+            self.visible_set.append(26)
+            self.visible_set.append(28)
+            self.visible_set.append(31)
+      elif module_text == "crypts":
+         if method_text in ("decode", "to_message"):
+            self.visible_set.append(33)
+            self.visible_set.append(34)
+         elif method_text in ("to_matrix"):
+            self.visible_set.append(32)
+            self.visible_set.append(35)
+            self.visible_set.append(36)
+         elif method_text in ("encode"):
+            self.visible_set.append(32)
+            self.visible_set.append(34)
+      else:
+         if method_text in ("poly_curve_fitting", "least_squares_reg", "area"):
+            self.visible_set.append(37)
+            self.visible_set.append(38)
+         elif method_text in ("volume"):
+            self.visible_set.append(37)
+            self.visible_set.append(38)
+            self.visible_set.append(39)
+            
+      for i in range(len(self.parameter_layouts)):
+         if i not in self.visible_set:
+            self.parameter_labels[i].setVisible(False)
+            self.parameter_widgets[i].setVisible(False)
+         else:
+            self.parameter_labels[i].setVisible(True)
+            self.parameter_widgets[i].setVisible(True)
+            
+   def calculate_button(self):
+      """ Displays the results, when pressing 'calculate' button. """
+      module_text = self.module_box.currentText()
+      method_text = self.method_box.currentText()
+
+      command = [os.path.abspath("./alat")]
+      if module_text == "matrices":
+         command.append("matrix")
+      elif module_text == "vectors":
+         command.append("vector")
+      elif module_text == "complexes":
+         command.append("complex")
+      elif module_text == "crypts":
+         command.append("crypt")
+      else:
+         command.append("app")
+      command.append(method_text)
+      
+      self.results_text += ">>> " + " ".join(command) + " ...\n"
+   
+      for i in self.visible_set:
+         if isinstance(self.parameter_widgets[i], QComboBox):
+            command.append(self.parameter_widgets[i].currentText())
+         else:
+            command.append(self.parameter_widgets[i].text())   
+
+      if method_text in ("zeros", "ones", "identity", "arbitrary",
+         "sequential", "random", "uniform", "randint", "reshape", 
+         "to_matrix"):
+         command[-2] = command[-2] + "," + command[-1]
+         command.pop()
+      
+      try:
+         result = subprocess.run(command, capture_output=True, text=True, check=True)
+         self.results_text += ">>> " + result.stdout + "\n"
+         self.textedit.setText(self.results_text)
+      except subprocess.CalledProcessError as error:
+         self.results_text += ">>> " + error.stderr + "\n"
+         self.textedit.setText(self.results_text)
+      
+   def save_results_button(self):
+      """ Save the results when pressing 'save results' button. """
+      fname_max_in = 0
+      
+      for fname in os.listdir(SAVE_DIR):
+         if fname.startswith("alat-result-") and fname.endswith(".txt"):
+            if int(fname[12:-4]) > fname_max_in:
+               fname_max_in = int(fname[12:-4])
+               
+      fname = "alat-result-" + str(fname_max_in + 1) + ".txt"
+      with open(os.path.join(SAVE_DIR, fname), mode="w+") as file:
+         file.write(self.results_text)         
+      
+   def clear_button(self):
+      """ Clear the result completely, when pressing 'clear' button. """
+      self.results_text = ""
+      self.textedit.clear()
+      
+   def help_button(self):
+      """ Display the help window, when pressing 'help' button. """
+      self.help_window.show()
+       
+if __name__ == "__main__":
+   
+   app = QApplication(sys.argv)
+   
+   alat = ALAT()
+   alat.show()
+   
+   sys.exit(app.exec())
